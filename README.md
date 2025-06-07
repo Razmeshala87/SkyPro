@@ -8,7 +8,7 @@
 
 1. Клонируйте репозиторий:
 ```
-git clone https://github.com/username/project-x.git
+git clone git@github.com:Razmeshala87/SkyPro.git
 ```
 2. Установите зависимости:
 ```
