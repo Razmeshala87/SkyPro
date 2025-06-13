@@ -3,6 +3,7 @@ import pytest
 from src.masks import get_mask_card_number
 
 
+# Определение функции
 def get_mask_card_number(card_number: str) -> str:
     if not card_number or not card_number.isdigit():
         return ''
@@ -11,6 +12,30 @@ def get_mask_card_number(card_number: str) -> str:
         return '*' * length
     else:
         return '*' * (length - 4) + card_number[-4:]
+
+# Тест с параметризацией для корректных и некорректных данных
+@pytest.mark.parametrize(
+    "card_number, expected",
+    [
+        ("1234567812345678", "************5678"),
+        ("1234", "****"),
+        ("12", "**"),
+        ("", ""),
+        (None, ""),  # Обработка None
+        ("12345678901234567890", "****************7890"),
+        ("0000000000000000", "************0000"),
+        ("987654321", "*****4321"),
+        # Некорректные входные данные
+        ("abcd1234", ""),
+        ("1234abcd", ""),
+        ("1234 5678", ""),
+    ]
+)
+def test_get_mask_card_number_parametrized(card_number, expected):
+    # Обработка None
+    input_value = card_number if card_number is not None else ''
+    result = get_mask_card_number(input_value)
+    assert result == expected
 
 # Фикстуры для тестовых данных
 @pytest.fixture
