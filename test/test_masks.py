@@ -1,6 +1,6 @@
 import pytest
 
-from src.masks import get_mask_card_number
+from src.masks import get_mask_card_number,get_mask_account
 
 
 # Определение функции
@@ -70,3 +70,50 @@ def test_get_mask_card_number_with_fixtures(sample_data, non_digit_inputs):
     for item in non_digit_inputs:
         result = get_mask_card_number(item["card_number"])
         assert result == item["expected"], f"Failed for input: {item['card_number']}"
+
+# Фикстуры для тестовых данных
+@pytest.fixture
+def valid_account_numbers():
+    return [
+        ("73654108430135874305", "**4305"),
+        ("1234", "**1234"),
+        (" 12-34 56 ", "**56"),
+        ("000000000000", "**0000"),
+        ("987654321", "**4321"),
+        ("  9876-5432  ", "**5432"),
+    ]
+
+@pytest.fixture
+def invalid_account_numbers():
+    return [
+        ("123", "Номер счета слишком короткий"),
+        ("abc-def", "Номер счета слишком короткий"),
+        ("", "Номер счета слишком короткий"),
+        ("   ", "Номер счета слишком короткий"),
+        ("--", "Номер счета слишком короткий"),
+    ]
+
+@pytest.mark.parametrize("input_value, expected_output", [
+    ("73654108430135874305", "**4305"),
+    ("1234", "**1234"),
+    (" 12-34 56 ", "**3456"),
+    ("000000000000", "**0000"),
+    ("987654321", "**4321"),
+    ("  9876-5432  ", "**5432"),
+])
+def test_get_mask_account_valid(input_value, expected_output):
+    result = get_mask_account(input_value)
+    assert result == expected_output
+
+# Тест для обработки ошибок (короткие номера)
+@pytest.mark.parametrize("input_value, expected_error", [
+    ("123", "Номер счета слишком короткий"),
+    ("abc-def", "Номер счета слишком короткий"),
+    ("", "Номер счета слишком короткий"),
+    ("   ", "Номер счета слишком короткий"),
+    ("--", "Номер счета слишком короткий"),
+])
+def test_get_mask_account_invalid(input_value, expected_error):
+    with pytest.raises(ValueError) as excinfo:
+        get_mask_account(input_value)
+    assert str(excinfo.value) == expected_error
