@@ -3,7 +3,6 @@ import pytest
 from src.masks import get_mask_card_number
 
 
-# Для примера, определим функцию здесь
 def get_mask_card_number(card_number: str) -> str:
     if not card_number or not card_number.isdigit():
         return ''
@@ -13,26 +12,36 @@ def get_mask_card_number(card_number: str) -> str:
     else:
         return '*' * (length - 4) + card_number[-4:]
 
-@pytest.mark.parametrize("input_value, expected_output", [
-    ("1234567812345678", "************5678"),  # стандартный 16-значный номер
-    ("1234", "****"),                          # минимальный допустимый длины (4)
-    ("12", "**"),                              # менее 4 символов
-    ("", ""),                                  # пустая строка
-    (None, ""),                                # None (если функция принимает такой тип)
-    ("12345678901234567890", "****************7890"),  # длинный номер
-    ("0000000000000000", "************0000"),  # нулевой номер
-    ("987654321", "*****4321"),                # 9-значный номер
-])
-def test_get_mask_card_number(input_value, expected_output):
-    # Обработка None, если функция должна принимать такие значения
-    if input_value is None:
-        result = get_mask_card_number('')
-    else:
-        result = get_mask_card_number(input_value)
-    assert result == expected_output
+# Фикстуры для тестовых данных
+@pytest.fixture
+def sample_data():
+    return [
+        {"card_number": "1234567812345678", "expected": "************5678"},
+        {"card_number": "1234", "expected": "****"},
+        {"card_number": "12", "expected": "**"},
+        {"card_number": "", "expected": ""},
+        {"card_number": None, "expected": ""},
+        {"card_number": "12345678901234567890", "expected": "****************7890"},
+        {"card_number": "0000000000000000", "expected": "************0000"},
+        {"card_number": "987654321", "expected": "*****4321"},
+    ]
 
-# Проверка обработки некорректных входных данных
-def test_non_digit_input():
-    assert get_mask_card_number("abcd1234") == ''
-    assert get_mask_card_number("1234abcd") == ''
-    assert get_mask_card_number("1234 5678") == ''
+@pytest.fixture
+def non_digit_inputs():
+    return [
+        {"card_number": "abcd1234", "expected": ""},
+        {"card_number": "1234abcd", "expected": ""},
+        {"card_number": "1234 5678", "expected": ""},
+    ]
+
+# Тест с использованием фикстур
+def test_get_mask_card_number_with_fixtures(sample_data, non_digit_inputs):
+    # Проверка корректных данных
+    for item in sample_data:
+        result = get_mask_card_number(item["card_number"] if item["card_number"] is not None else "")
+        assert result == item["expected"], f"Failed for input: {item['card_number']}"
+
+    # Проверка некорректных данных
+    for item in non_digit_inputs:
+        result = get_mask_card_number(item["card_number"])
+        assert result == item["expected"], f"Failed for input: {item['card_number']}"
