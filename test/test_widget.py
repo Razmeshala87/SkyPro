@@ -10,7 +10,7 @@ def valid_card_numbers() -> List[Tuple[str, str]]:
     return [
         ("Visa 1234567812345678", "Visa 1234 56** **** 5678"),
         ("МИР 1234123412341234", "МИР 1234 12** **** 1234"),
-        ("MasterCard 5678567856785678", "MasterCard 5678 56** **** 5678")
+        ("MasterCard 5678567856785678", "MasterCard 5678 56** **** 5678"),
     ]
 
 
@@ -19,7 +19,7 @@ def valid_account_numbers() -> List[Tuple[str, str]]:
     return [
         ("Счет 12345678901234567890", "Счет **7890"),
         ("счет 98765432109876543210", "счет **3210"),
-        ("СЧЕТ 11112222333344445555", "СЧЕТ **5555")
+        ("СЧЕТ 11112222333344445555", "СЧЕТ **5555"),
     ]
 
 
@@ -30,7 +30,7 @@ def invalid_data() -> List[Tuple[Union[str, Any], Union[str, Any]]]:
         ("Счет", "Счет"),
         ("1234567812345678", "1234567812345678"),
         ("", ""),
-        ("InvalidType 1234567890123456", "InvalidType 1234 56** **** 3456")
+        ("InvalidType 1234567890123456", "InvalidType 1234 56** **** 3456"),
     ]
 
 
@@ -39,18 +39,13 @@ def date_samples() -> List[Tuple[str, str]]:
     return [
         ("2023-10-05T14:30:00.000000", "05.10.2023"),
         ("1999-12-31T23:59:59.999999", "31.12.1999"),
-        ("2000-01-01T00:00:00.000000", "01.01.2000")
+        ("2000-01-01T00:00:00.000000", "01.01.2000"),
     ]
 
 
 @pytest.fixture
 def invalid_dates() -> List[Tuple[Union[str, Any], Union[str, Any]]]:
-    return [
-        ("2023/10/05", "2023/10/05"),
-        ("NotADate", "NotADate"),
-        ("", ""),
-        ("2023-13-01", "01.13.2023")
-    ]
+    return [("2023/10/05", "2023/10/05"), ("NotADate", "NotADate"), ("", ""), ("2023-13-01", "01.13.2023")]
 
 
 def test_mask_card_numbers(valid_card_numbers: List[Tuple[str, str]]) -> None:
