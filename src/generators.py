@@ -43,15 +43,15 @@ def card_number_generator(start: int, end: int) -> Iterator[str]:
         start: Начальное значение диапазона (от 1)
         end: Конечное значение диапазона (до 9999999999999999)
 
+    Raises:
+        ValueError: Если start > end
+
     Yields:
         str: Номер карты в заданном формате
-
-    Пример использования:
-        for card_number in card_number_generator(1, 5):
-            print(card_number)
     """
+    if start > end:
+        raise ValueError("Start value cannot be greater than end value")
+
     for number in range(start, end + 1):
-        # Форматируем число в 16-значную строку с ведущими нулями
         card_str = f"{number:016d}"
-        # Разбиваем на группы по 4 цифры
         yield f"{card_str[:4]} {card_str[4:8]} {card_str[8:12]} {card_str[12:16]}"
