@@ -2,7 +2,7 @@ import functools
 from datetime import datetime
 from typing import Callable, TypeVar, Any, Optional
 
-T = TypeVar('T')  # Обобщенный тип для возвращаемого значения функции
+T = TypeVar('T')
 
 
 def log(filename: Optional[str] = None) -> Callable[[Callable[..., T]], Callable[..., T]]:
@@ -13,11 +13,9 @@ def log(filename: Optional[str] = None) -> Callable[[Callable[..., T]], Callable
             start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             log_message_start = f"{start_time} - {func.__name__} started\n"
             log_message_success = f"{start_time} - {func.__name__} ok\n"
-            log_message_error = (
-                f"{start_time} - {func.__name__} error: {{error_type}}. Inputs: {args}, {kwargs}\n"
-            )
+            # Исправленная строка формата ошибки
+            log_message_error = f"{start_time} - {func.__name__} error: %s. Inputs: {args}, {kwargs}\n"
 
-            # Логируем начало выполнения
             if filename:
                 with open(filename, "a", encoding="utf-8") as f:
                     f.write(log_message_start)
@@ -26,7 +24,6 @@ def log(filename: Optional[str] = None) -> Callable[[Callable[..., T]], Callable
 
             try:
                 result = func(*args, **kwargs)
-                # Логируем успешное завершение
                 if filename:
                     with open(filename, "a", encoding="utf-8") as f:
                         f.write(log_message_success)
@@ -34,14 +31,14 @@ def log(filename: Optional[str] = None) -> Callable[[Callable[..., T]], Callable
                     print(log_message_success, end="")
                 return result
             except Exception as e:
-                # Логируем ошибку
-                error_message = log_message_error.format(error_type=type(e).__name__)
+                # Исправленное форматирование ошибки
+                error_message = log_message_error % type(e).__name__
                 if filename:
                     with open(filename, "a", encoding="utf-8") as f:
                         f.write(error_message)
                 else:
                     print(error_message, end="")
-                raise  # Пробрасываем ошибку дальше
+                raise
 
         return wrapper
     return decorator
