@@ -2,7 +2,7 @@ import json
 import logging
 from typing import List, Dict, Any, Optional
 from pathlib import Path
-from external_api import currency_convertor
+from external_api import convert_to_rub
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -67,7 +67,7 @@ def load_transactions(
                         and 'amount' in transaction
                         and 'currency' in transaction):
                     try:
-                        transaction['converted_amount'] = currency_convertor(
+                        transaction['converted_amount'] = convert_to_rub(
                             transaction['amount'],
                             transaction['currency'],
                             target_currency
