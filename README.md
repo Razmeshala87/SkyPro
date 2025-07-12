@@ -13,7 +13,7 @@
 
 
 
-Установка
+# Установка
 
 
 		1. Клонируйте репозиторий:
@@ -31,25 +31,30 @@ C:\Users\Razme\PycharmProjects
 pip install -r requirements.txt
 
 
+        4. Создайте .env файл:
 
-Использование
+echo "API_KEY=ваш_ключ_от_api_layer" > .env
+
+
+
+# Использование
 
 Примеры использования функций:
 
 from src.masks import get_mask_account, get_mask_card_number
 
-# Пример использования get_mask_account
+## Пример использования get_mask_account
 
 print(get_mask_card_number("1234567812345678"))
 
-# Пример использования get_mask_account
+## Пример использования get_mask_account
 
 print(get_mask_account("123456"))
 
 
 from src.processing import filter_by_state, sort_by_date
 
-# Пример использования filter_by_state
+## Пример использования filter_by_state
 print(
         filter_by_state(
             [
@@ -61,7 +66,7 @@ print(
         )
     )
 
-# Пример использования sort_by_date
+## Пример использования sort_by_date
 print(
     sort_by_date(
         [
@@ -73,17 +78,51 @@ print(
     )
 )
 
-# Пример использования filter_by_currency
+## Пример использования filter_by_currency
 
 print(next(result))
 
-# Пример использования transaction_descriptions
+## Пример использования transaction_descriptions
 
 print(next(result_descriptions))
 
-# Пример использования card_number_generator
+## Пример использования card_number_generator
 
 print(next(card_number_generator(100, 300)))
+
+## Маскировка данных
+
+from src.masks import get_mask_account, get_mask_card_number
+
+print(get_mask_card_number("1234567812345678"))  # "1234 56** **** 5678"
+print(get_mask_account("123456"))  # "**3456"
+
+## Обработка транзакций
+
+from src.processing import filter_by_state, sort_by_date
+from src.utils import load_transactions
+from src.external_api import convert_to_rub
+
+transactions = load_transactions("data.json")
+executed = filter_by_state(transactions, "EXECUTED")
+sorted_trans = sort_by_date(transactions)
+
+usd_trans = {"amount": 100, "currency": "USD"}
+print(convert_to_rub(usd_trans))  # Конвертация в рубли
+
+## Логирование
+
+from src.decorators import log
+
+@log(filename="operations.log")
+def transfer(amount, recipient):
+    """Пример функции с логированием в файл"""
+    return f"Переведено {amount} руб. для {recipient}"
+
+@log()
+def check_balance():
+    """Логирование в консоль"""
+    return "Баланс: 1000 руб."
 
 # Список тест-кейсов для существующего функционала находящихся в директории tests:
 
@@ -147,3 +186,115 @@ print(next(card_number_generator(100, 300)))
 1. Тест, который проверяет, что генератор выдает правильные номера карт в заданном диапазоне.
 2. Тестируем корректность форматирования номеров карт.
 3. Тест, на то, что генератор корректно обрабатывает крайние значения диапазона и правильно завершает генерацию.
+
+## Модуль test_utils.py
+
+Тестирование функции load_transactions()
+
+1. **Загрузка валидного JSON-файла**
+   - Предусловие: Существует файл с корректными данными транзакций
+   - Шаги:
+     1. Создать mock файла с данными: `[{"id": 1, "amount": 100}]`
+     2. Вызвать load_transactions()
+   - Ожидаемый результат: Возвращается список транзакций
+
+2. **Загрузка пустого файла**
+   - Предусловие: Существует пустой файл
+   - Шаги:
+     1. Создать mock пустого файла
+     2. Вызвать load_transactions()
+   - Ожидаемый результат: Возвращается пустой список
+
+3. **Файл не существует**
+   - Предусловие: Файл отсутствует
+   - Шаги:
+     1. Настроить mock на возврат False для exists()
+     2. Вызвать load_transactions()
+   - Ожидаемый результат: Возвращается пустой список
+
+4. **Некорректный JSON**
+   - Предусловие: Файл содержит битый JSON
+   - Шаги:
+     1. Создать mock с некорректными данными
+     2. Вызвать load_transactions()
+   - Ожидаемый результат: Возвращается пустой список
+
+5. **JSON не является списком**
+   - Предусловие: Файл содержит JSON-объект (не массив)
+   - Шаги:
+     1. Создать mock с данными `{"id": 1}`
+     2. Вызвать load_transactions()
+   - Ожидаемый результат: Возвращается пустой список
+
+6. **Файл с Unicode-символами**
+   - Предусловие: Файл содержит Unicode-символы
+   - Шаги:
+     1. Создать mock с данными `[{"description": "Платеж"}]`
+     2. Вызвать load_transactions()
+   - Ожидаемый результат: Корректно загруженные данные
+
+## Модуль test_external_api.py
+
+Тестирование функции convert_to_rub()
+
+1. **Конвертация RUB в RUB**
+   - Предусловие: Валюта транзакции - RUB
+   - Шаги:
+     1. Создать транзакцию `{"amount": 100, "currency": "RUB"}`
+     2. Вызвать convert_to_rub()
+   - Ожидаемый результат: Возвращается исходная сумма (100)
+
+2. **Конвертация USD в RUB**
+   - Предусловие: Установлен API_KEY, доступно API
+   - Шаги:
+     1. Настроить mock API с курсом 75.5
+     2. Создать транзакцию `{"amount": 10, "currency": "USD"}`
+     3. Вызвать convert_to_rub()
+   - Ожидаемый результат: Возвращается 755 (10 * 75.5)
+
+3. **Ошибка API**
+   - Предусловие: API возвращает ошибку
+   - Шаги:
+     1. Настроить mock на вызов исключения RequestException
+     2. Создать транзакцию `{"amount": 10, "currency": "EUR"}`
+     3. Вызвать convert_to_rub()
+   - Ожидаемый результат: Вызывается ValueError
+
+4. **Отсутствует API_KEY**
+   - Предусловие: В окружении нет API_KEY
+   - Шаги:
+     1. Очистить переменные окружения
+     2. Создать транзакцию `{"amount": 10, "currency": "GBP"}`
+     3. Вызвать convert_to_rub()
+   - Ожидаемый результат: Вызывается ValueError
+
+5. **Некорректный JSON-ответ**
+   - Предусловие: API возвращает некорректный JSON
+   - Шаги:
+     1. Настроить mock на возврат пустого JSON
+     2. Создать транзакцию `{"amount": 10, "currency": "JPY"}`
+     3. Вызвать convert_to_rub()
+   - Ожидаемый результат: Вызывается ValueError
+
+6. **Граничные значения суммы**
+   - Предусловие: Установлен API_KEY
+   - Шаги:
+     1. Настроить mock API с курсом 1
+     2. Создать транзакцию `{"amount": 0, "currency": "USD"}`
+     3. Вызвать convert_to_rub()
+   - Ожидаемый результат: Возвращается 0
+
+# Требования
+
+1. Python 3.8+
+2. Зависимости (устанавливаются автоматически):
+3. requests
+4. python-dotenv
+5. pytest (для тестов)
+
+# Поддержка
+Для работы конвертера валют требуется бесплатный API-ключ от APILayer
+
+# Важно
+Все ошибки логируются с указанием времени, имени функции и входных параметров.
+При конвертации валют по умолчанию используется кеширование курсов на 1 час.
