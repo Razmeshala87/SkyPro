@@ -1,24 +1,42 @@
 import json
 import logging
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 
-# Настройка логгера для модуля utils
 def setup_logger() -> logging.Logger:
+    """Настройка логгера с гарантированной записью в файл"""
     logs_dir = Path("logs")
     logs_dir.mkdir(exist_ok=True)
 
     logger = logging.getLogger("utils")
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.INFO)  # Уровень для самого логгера
 
-    handler = logging.FileHandler("logs/utils.log", mode="w")
-    handler.setLevel(logging.INFO)
+    # Очищаем предыдущие обработчики (если есть)
+    if logger.hasHandlers():
+        logger.handlers.clear()
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
+    # Файловый обработчик
+    file_handler = logging.FileHandler(
+        "logs/utils.log",
+        mode="w",
+        encoding="utf-8"
+    )
+    file_handler.setLevel(logging.INFO)  # Уровень для файлового вывода
 
-    logger.addHandler(handler)
+    # Консольный обработчик для отладки (опционально)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)  # Для отладки можно временно добавить
+
     return logger
 
 
@@ -27,8 +45,11 @@ logger = setup_logger()
 
 def load_transactions(file_path: str) -> List[Dict[str, Any]]:
     """Загружает транзакции из JSON-файла."""
+    logger.info(f"Начало загрузки транзакций из файла: {file_path}")
+
     try:
         path = Path(file_path)
+
         if not path.exists():
             error_msg = f"Файл не существует: {file_path}"
             logger.error(error_msg)
@@ -40,20 +61,31 @@ def load_transactions(file_path: str) -> List[Dict[str, Any]]:
 
         with open(path, 'r', encoding='utf-8') as file:
             data = json.load(file)
+            logger.debug(f"Прочитано {len(data)} записей")  # Для отладки
 
         if not isinstance(data, list):
             logger.warning(f"Файл {file_path} не содержит список транзакций")
             return []
 
-        logger.info(f"Успешно загружено {len(data)} транзакций из {file_path}")
+        logger.info(f"Успешно загружено {len(data)} транзакций")
         return data
 
     except json.JSONDecodeError as e:
-        logger.error(f"Ошибка декодирования JSON в файле {file_path}: {str(e)}")
-        return []
-    except OSError as e:
-        logger.error(f"Ошибка ввода-вывода при работе с файлом {file_path}: {str(e)}")
+        logger.error(f"Ошибка JSON в файле {file_path}: {str(e)}", exc_info=True)
         return []
     except Exception as e:
-        logger.error(f"Неожиданная ошибка при загрузке транзакций: {str(e)}")
+        logger.error(f"Неожиданная ошибка: {str(e)}", exc_info=True)
         return []
+
+
+# Тестовый вызов для проверки логирования
+if __name__ == "__main__":
+    # Тест с существующим файлом
+    test_data = load_transactions("data/transactions.json")
+
+    # Тест с несуществующим файлом
+    load_transactions("nonexistent.json")
+
+    # Тест с пустым файлом
+    Path("empty.json").touch()
+    load_transactions("empty.json")
