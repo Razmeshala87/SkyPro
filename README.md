@@ -10,7 +10,8 @@
 6. Имеет генератор transaction_descriptions,
 который принимает список словарей с транзакциями и возвращает описание каждой операции по очереди.
 7. Генератор card_number_generator принимает начальное и конечное значения для генерации диапазона номеров.
-
+8. Чтение транзакций из CSV и Excel файлов
+9. Анализ и статистика по транзакциям
 
 
 # Установка
@@ -123,6 +124,26 @@ def transfer(amount, recipient):
 def check_balance():
     """Логирование в консоль"""
     return "Баланс: 1000 руб."
+
+## Пример работы с транзакциями
+
+from fin_operation import (
+    TransactionState,
+    read_transactions_from_csv,
+    read_transactions_from_excel,
+    get_transaction_stats
+)
+
+# Чтение из CSV
+csv_transactions = read_transactions_from_csv("transactions.csv")
+
+# Чтение из Excel
+excel_transactions = read_transactions_from_excel("transactions.xlsx")
+
+# Получение статистики
+stats = get_transaction_stats(csv_transactions)
+print(f"Всего транзакций: {stats['total_transactions']}")
+print(f"Общая сумма: {stats['total_amount']}")
 
 # Список тест-кейсов для существующего функционала находящихся в директории tests:
 
@@ -284,13 +305,33 @@ def check_balance():
      3. Вызвать convert_to_rub()
    - Ожидаемый результат: Возвращается 0
 
+## TestTransaction
+- Проверка создания объекта транзакции
+- Проверка создания транзакции без отправителя
+
+## TestCSVReader
+- Чтение валидного CSV файла
+- Чтение пустого CSV файла
+- Чтение CSV с невалидными данными
+
+## TestExcelReader
+- Чтение валидного Excel файла
+- Чтение пустого Excel файла
+- Чтение Excel с невалидными данными
+- Чтение активного листа по умолчанию
+
+## TestTransactionStats
+- Статистика по списку транзакций
+- Статистика по пустому списку
 # Требования
 
 1. Python 3.8+
 2. Зависимости (устанавливаются автоматически):
-3. requests
-4. python-dotenv
-5. pytest (для тестов)
+- requests
+- python-dotenv
+- pytest (для тестов)
+- openpyxl (для работы с Excel)
+- pytest (для тестов)
 
 # Поддержка
 Для работы конвертера валют требуется бесплатный API-ключ от APILayer
@@ -298,3 +339,4 @@ def check_balance():
 # Важно
 Все ошибки логируются с указанием времени, имени функции и входных параметров.
 При конвертации валют по умолчанию используется кеширование курсов на 1 час.
+Все ошибки при чтении файлов логируются в консоль с указанием проблемной строки.
