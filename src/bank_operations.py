@@ -1,4 +1,5 @@
 import re
+from collections import Counter
 from typing import Dict, List
 
 
@@ -12,16 +13,17 @@ def process_bank_search(data: List[Dict], search: str) -> List[Dict]:
 
 def process_bank_operations(data: List[Dict], categories: List[str]) -> Dict[str, int]:
     """
-    Считает количество операций по категориям
+    Считает количество операций по категориям (с использованием Counter)
     """
-    result = {category: 0 for category in categories}
+    category_counter: Counter[str] = Counter()  # Явная аннотация типа
 
     for op in data:
         if 'description' in op:
             for category in categories:
                 if category.lower() in op['description'].lower():
-                    result[category] += 1
-    return result
+                    category_counter[category] += 1
+
+    return dict(category_counter)  # Возвращаем обычный dict для совместимости
 
 
 def filter_by_status(data: List[Dict], status: str) -> List[Dict]:
