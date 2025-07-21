@@ -2,7 +2,8 @@ from typing import Any, Dict, List
 
 import pytest
 
-from src.bank_operations import filter_by_status, process_bank_operations, process_bank_search, sort_by_date
+from src.bank_operations import (filter_by_status, filter_rub_only, process_bank_operations, process_bank_search,
+                                 sort_by_date)
 
 
 @pytest.fixture
@@ -53,7 +54,7 @@ def sample_data() -> List[Dict[str, Any]]:
 
 class TestProcessBankSearch:
     def test_search_by_word(self, sample_data: List[Dict[str, Any]]) -> None:
-        result = process_bank_search(sample_data, 'grocery')
+        result = process_bank_search(sample_data, r'\bgrocery\b')
         assert len(result) == 1
         assert result[0]['id'] == 4
 
@@ -63,32 +64,29 @@ class TestProcessBankSearch:
         assert {op['id'] for op in result} == {1, 4}
 
     def test_no_matches(self, sample_data: List[Dict[str, Any]]) -> None:
-        assert len(process_bank_search(sample_data, 'nonexistent')) == 0
+        assert not process_bank_search(sample_data, 'nonexistent')
 
     def test_empty_data(self) -> None:
-        assert process_bank_search([], 'test') == []
+        assert not process_bank_search([], 'test')
 
     def test_special_chars_in_search(self, sample_data: List[Dict[str, Any]]) -> None:
         modified_data = sample_data + [{'description': 'Special $100 payment'}]
-        result = process_bank_search(modified_data, '$100')
+        result = process_bank_search(modified_data, r'\$100')
         assert len(result) == 1
 
     def test_empty_string_search(self, sample_data: List[Dict[str, Any]]) -> None:
         result = process_bank_search(sample_data, '')
-        assert len(result) == len(sample_data)
+        assert len(result) == len([op for op in sample_data if 'description' in op])
 
 
 class TestProcessBankOperations:
     def test_category_counting(self, sample_data: List[Dict[str, Any]]) -> None:
-        categories = ['grocery', 'payment', 'salary']
+        categories = ['grocery', 'payment', 'salary', 'nonexistent']
         result = process_bank_operations(sample_data, categories)
-        assert result == {'grocery': 1, 'payment': 2, 'salary': 1}
+        assert result == {'grocery': 1, 'payment': 2, 'salary': 1, 'nonexistent': 0}
 
     def test_empty_categories(self, sample_data: List[Dict[str, Any]]) -> None:
-        assert process_bank_operations(sample_data, []) == {}
-
-    def test_nonexistent_categories(self, sample_data: List[Dict[str, Any]]) -> None:
-        assert process_bank_operations(sample_data, ['nonexistent']) == {'nonexistent': 0}
+        assert not process_bank_operations(sample_data, [])
 
     def test_empty_data(self) -> None:
         assert process_bank_operations([], ['test']) == {'test': 0}
@@ -115,7 +113,7 @@ class TestFilterByStatus:
         assert {op['id'] for op in result} == {1, 2, 5}
 
     def test_nonexistent_status(self, sample_data: List[Dict[str, Any]]) -> None:
-        assert len(filter_by_status(sample_data, 'nonexistent')) == 0
+        assert not filter_by_status(sample_data, 'nonexistent')
 
 
 class TestSortByDate:
@@ -133,23 +131,38 @@ class TestSortByDate:
         assert [op['id'] for op in result] == [1, 2]
 
     def test_invalid_date_format(self) -> None:
-        data: List[Dict[str, str]] = [{'date': 'invalid'}, {'date': '2023-01-01'}]
+        data = [{'date': 'invalid'}, {'date': '2023-01-01'}]
         result = sort_by_date(data)
         assert [op['date'] for op in result] == ['2023-01-01', 'invalid']
+
+
+class TestFilterRubOnly:
+    def test_rub_transactions(self, sample_data: List[Dict[str, Any]]) -> None:
+        result = filter_rub_only(sample_data)
+        assert len(result) == 3
+        assert {op['id'] for op in result} == {1, 4, 5}
+
+    def test_no_rub_transactions(self) -> None:
+        data: List[Dict[str, Any]] = [{'currency_code': 'USD'}, {'currency_code': 'EUR'}]
+        assert not filter_rub_only(data)
+
+    def test_missing_currency_field(self) -> None:
+        data: List[Dict[str, Any]] = [{'id': 1}, {'currency_code': 'RUB'}]
+        result = filter_rub_only(data)
+        assert len(result) == 1
+        assert result[0]['currency_code'] == 'RUB'
 
 
 class TestEdgeCases:
     def test_none_data(self) -> None:
         with pytest.raises(TypeError):
-            # Явно указываем, что намеренно передаем None
             process_bank_search(None, 'test')  # type: ignore[arg-type]
 
     def test_invalid_data_types(self) -> None:
         with pytest.raises(AttributeError):
-            # Явно указываем неверный тип данных
             process_bank_operations([{'description': 123}], ['test'])  # type: ignore[arg-type]
 
     def test_mixed_data_structures(self) -> None:
-        data: List[Dict[str, Any]] = [{'status': 'EXECUTED'}, {}, {}]
+        data = [{'status': 'EXECUTED'}, {}, {}]
         result = filter_by_status(data, 'executed')
         assert len(result) == 1
